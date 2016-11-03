@@ -22,7 +22,6 @@
 import argparse
 import ConfigParser
 
-
 # Read in config file
 config = ConfigParser.RawConfigParser()
 config.read('/etc/fedimg.cfg')
@@ -59,6 +58,7 @@ RACKSPACE_API_KEY = config.get('rackspace', 'api_key')
 GCE_EMAIL = config.get('gce', 'email')
 GCE_KEYPATH = config.get('gce', 'keypath')
 GCE_PROJECT_ID = config.get('gce', 'project_id')
+GCE_STORAGE_CONTAINER = config.get('gce', 'storage_container')
 
 # HP
 HP_USER = config.get('hp', 'username')

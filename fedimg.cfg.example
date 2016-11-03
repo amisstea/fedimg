@@ -46,6 +46,7 @@ api_key = secretk3y
 email = someacct@provider.com
 keypath = /path/to/pem/file
 project_id = someprojectid
+storage_container = somecontainername
 
 [hp]
 username = aperson
