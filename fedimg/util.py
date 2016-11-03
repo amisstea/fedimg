@@ -18,6 +18,7 @@
 #
 # Authors:  David Gay <dgay@redhat.com>
 #           Ralph Bean <rbean@redhat.com>
+#           Alex Misstear <amisstea@redhat.com>
 #
 
 """
@@ -25,14 +26,17 @@ Utility functions for fedimg.
 """
 
 import functools
+import logging
 import socket
-import subprocess
+import time
 
 import paramiko
 from libcloud.compute.types import Provider
 from libcloud.compute.providers import get_driver
 
 import fedimg
+
+log = logging.getLogger(__name__)
 
 
 def get_file_arch(file_name):
@@ -77,21 +81,29 @@ def region_to_driver(region):
     return functools.partial(cls, region=region)
 
 
-def ssh_connection_works(username, ip, keypath):
+def ssh_connection_works(username, ip, keypath, attempts=1, interval=10):
     """ Returns True if an SSH connection can me made to `username`@`ip`. """
+    log.info('Testing SSH connectivity to {0}@{1}'.format(username, ip))
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    works = False
-    try:
-        ssh.connect(ip, username=username,
-                    key_filename=keypath)
-        works = True
-    except (paramiko.BadHostKeyException,
-            paramiko.AuthenticationException,
-            paramiko.SSHException, socket.error) as e:
-        pass
-    ssh.close()
-    return works
+
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            ssh.connect(ip, username=username, key_filename=keypath)
+            log.info('SSH connection successful to {0}@{1}'.format(username, ip))
+            return True
+        except (paramiko.BadHostKeyException,
+                paramiko.AuthenticationException,
+                paramiko.SSHException,
+                socket.error) as e:
+            log.debug('SSH connection failed with "{0}"'.format(e.message))
+            if attempt >= attempts:
+                return False
+            time.sleep(interval)
+        finally:
+            ssh.close()
 
 
 def safeget(dct, *keys):
