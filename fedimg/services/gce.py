@@ -72,7 +72,8 @@ class GCEService(BaseService):
 
     def cleanup(self):
         # Delete the test instances
-        for node in self.nodes:
+        while self.nodes:
+            node = self.nodes.pop()
             log.info('Deleting test instance: {0}'.format(node.name))
             try:
                 if not self.compute.destroy_node(node, destroy_boot_disk=True):
@@ -81,7 +82,8 @@ class GCEService(BaseService):
                 log.debug('No test instance to delete')
 
         # Delete the test images
-        for gce_image in self.gce_images:
+        while self.gce_images:
+            gce_image = self.gce_images.pop()
             log.info('Deleting test image: {0}'.format(gce_image.name))
             try:
                 if not gce_image.delete():
@@ -104,19 +106,24 @@ class GCEService(BaseService):
             container = self.storage.create_container(container_name)
 
         # Open a stream to the image URL
-        resp = requests.get(image_url, stream=True)
-        if not resp.ok:
+        try:
+            resp = requests.get(image_url, stream=True)
+            if not resp.ok:
+                raise ImageURLError('GET request to image failed ({0}). '
+                                    'The server response code was {1}.'
+                                    .format(image_url, resp.status_code))
+        except requests.exceptions.RequestException as exc:
             raise ImageURLError('GET request to image failed ({0}). '
-                                'The server response code was {1}'
-                                .format(image_url, resp.status_code))
+                                'The reason was "{1}".'
+                                .format(image_url, exc.message))
 
         # Transfer via a stream to avoid the need for local storage
         iterator = resp.iter_content(chunk_size=self.CHUNK_SIZE)
         return self.storage.upload_object_via_stream(
                 iterator, container, object_name)
 
-    def test(self, image):
-        log.info('Testing image {0}'.format(image.name))
+    def verify(self, image):
+        log.info('Verifying image {0}'.format(image.name))
 
         # GCE image names can only contain alphanumerics and hyphens. Replace
         # all other characters with hyphens.
@@ -169,7 +176,7 @@ class GCEService(BaseService):
                                      'Perhaps the image is improperly '
                                      'configured for GCE.'
                                      .format(node.name))
-        log.info('Image {0} passed a basic sanity test'.format(image.name))
+        log.info('Image {0} passed a basic verification test'.format(image.name))
 
     def share(self, image, entities):
         for entity in entities:

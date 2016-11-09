@@ -66,11 +66,11 @@ class BaseService(object):
         """
         raise NotImplementedError('upload() has not been implemented')
 
-    def test(self, image):
+    def verify(self, image):
         """
         Performs a sanity level test of the image in the cloud service.
         """
-        raise NotImplementedError('test() has not been implemented')
+        raise NotImplementedError('verify() has not been implemented')
 
     def share(self, image, entities):
         """
