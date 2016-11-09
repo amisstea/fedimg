@@ -24,7 +24,6 @@ import logging
 import os
 import re
 import requests
-import time
 
 from libcloud.compute.providers import get_driver as get_compute_driver
 from libcloud.storage.providers import get_driver as get_storage_driver
